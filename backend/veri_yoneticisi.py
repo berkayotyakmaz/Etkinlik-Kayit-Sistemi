@@ -204,7 +204,7 @@ class VeriYoneticisi:
             if k.katilimci_id != katilimci_id and k.email == email_lower:
                 raise ValueError(f"Bu e-posta başka bir katılımcıya ait: {email_lower}")
 
-        if not Katilimci._email_gecerli_mi(email):
+        if not Katilimci.email_gecerli_mi(email):
             raise ValueError(f"Geçersiz e-posta formatı: {email}")
 
         katilimci.ad = ad.strip()
@@ -256,19 +256,34 @@ class VeriYoneticisi:
         if not katilimci:
             raise ValueError(f"Katılımcı bulunamadı (ID: {katilimci_id}).")
 
+        # Geçmiş etkinliğe yeni bilet kesilemez
+        if etkinlik.tarih < datetime.now():
+            raise ValueError(
+                "Geçmişte kalmış bir etkinliğe yeni bilet oluşturulamaz."
+            )
+
         # Etkinliğe katılımcı ekle (kapasite ve duplikasyon kontrolü burada)
         etkinlik.katilimci_ekle(katilimci_id)
 
-        # Factory metodu ile bilet üret
-        bilet = Bilet.bilet_olustur(
-            bilet_id=self._sonraki_bilet_id,
-            etkinlik_id=etkinlik_id,
-            katilimci_id=katilimci_id,
-        )
-        self._biletler[bilet.bilet_id] = bilet
-        self._sonraki_bilet_id += 1
-        self.kaydet()
-        return bilet
+        # Atomic: bilet üretimi veya kaydet patlarsa katılımcıyı geri al
+        bilet = None
+        try:
+            bilet = Bilet.bilet_olustur(
+                bilet_id=self._sonraki_bilet_id,
+                etkinlik_id=etkinlik_id,
+                katilimci_id=katilimci_id,
+            )
+            self._biletler[bilet.bilet_id] = bilet
+            self._sonraki_bilet_id += 1
+            self.kaydet()
+            return bilet
+        except Exception:
+            # Rollback: in-memory state'i tutarlı bırak
+            etkinlik.katilimci_cikar(katilimci_id)
+            if bilet is not None and bilet.bilet_id in self._biletler:
+                del self._biletler[bilet.bilet_id]
+                self._sonraki_bilet_id -= 1
+            raise
 
     def bilet_iptal(self, bilet_id: int) -> bool:
         """Bileti iptal eder ve katılımcıyı etkinlikten çıkarır."""

@@ -33,6 +33,11 @@ class Katilimci:
             return False
         return bool(Katilimci.EMAIL_REGEX.match(email.strip()))
 
+    @staticmethod
+    def email_gecerli_mi(email: str) -> bool:
+        """E-posta formatı doğrulayıcısı (public API)."""
+        return Katilimci._email_gecerli_mi(email)
+
     def to_dict(self) -> dict:
         """Katılımcıyı dict formatına dönüştürür."""
         return {
