@@ -1,72 +1,110 @@
-# Etkinlik Kayıt Sistemi
+# EventHub - Etkinlik Kayit Sistemi
 
-Modern, koyu temalı PyQt5 masaüstü uygulaması. Etkinlik, katılımcı ve bilet yönetimi yapan, JSON tabanlı veri saklayan, tam fonksiyonel bir sistem.
+Etkinlik, katilimci ve bilet yonetimi yapan, JSON tabanli veri saklayan masaustu uygulamasidir. PyQt5 ile koyu temali, magenta accentli modern bir arayuz sunar.
 
-## Özellikler
+## Teknolojiler
 
-- **Etkinlik Yönetimi**: Etkinlik ekleme, düzenleme, silme; tarih/kapasite takibi
-- **Katılımcı Yönetimi**: Benzersiz e-posta kontrolü ile katılımcı kayıt
-- **Bilet Sistemi**: Otomatik bilet kodu üretimi (`BLT-XXXXXXXX` formatında)
-- **Kapasite Kontrolü**: Etkinlik kapasitesi dolduğunda kayıt engellenir
-- **Katılım Raporu** (ek özellik): Etkinlik bazlı detaylı katılım analizi + CSV dışa aktarım
-- **Doluluk Göstergesi**: Renkli progress bar (yeşil → sarı → kırmızı)
-- **Arama**: Tüm tablolarda gerçek zamanlı arama
-- **Kalıcılık**: JSON dosyalarında otomatik kayıt
+- **Python 3** - Programlama dili
+- **PyQt5 (>=5.15.0)** - Masaustu GUI framework
+- **JSON** - Veri kaliciligi
 
-## Kurulum
 
-```bash
-pip install -r requirements.txt
-```
+## Proje Yapisi
 
-## Çalıştırma
+    etkinlik_kayit/
+    ├── main.py                          # Ana giris noktasi
+    ├── requirements.txt                 # Bagimliliklar
+    ├── backend/
+    │   ├── etkinlik.py                 # Etkinlik modeli
+    │   ├── katilimci.py                # Katilimci modeli (email validasyonu)
+    │   ├── bilet.py                    # Bilet modeli (factory)
+    │   └── veri_yoneticisi.py          # Repository / persistence katmani
+    ├── frontend/
+    │   ├── ana_pencere.py              # Sidebar + sayfa yigini
+    │   ├── tema.py                     # QSS stylesheet (koyu tema)
+    │   ├── views/
+    │   │   ├── dashboard.py            # Kontrol paneli
+    │   │   ├── etkinlikler.py          # Etkinlik yonetimi
+    │   │   ├── katilimcilar.py         # Katilimci yonetimi
+    │   │   ├── biletler.py             # Bilet listesi
+    │   │   └── raporlar.py             # Istatistikler ve CSV export
+    │   └── widgets/
+    │       ├── bilesenler.py           # IstatistikKart, Kart, DolulukGosterge
+    │       └── diyaloglar.py           # Form modallari
+    ├── images/                          # Ekran goruntuleri
+    └── data/
+        ├── etkinlikler.json
+        ├── katilimcilar.json
+        └── biletler.json
 
-```bash
-python main.py
-```
+## Ana Siniflar
 
-## Proje Yapısı
+### Etkinlik (`backend/etkinlik.py`)
 
-```
-etkinlik_kayit/
-├── main.py                          # Giriş noktası
-├── requirements.txt
-├── backend/                         # İş mantığı (UI'dan bağımsız)
-│   ├── etkinlik.py                 # Etkinlik sınıfı + katilimci_ekle()
-│   ├── katilimci.py                # Katılımcı sınıfı + e-posta validasyonu
-│   ├── bilet.py                    # Bilet sınıfı + bilet_olustur()
-│   └── veri_yoneticisi.py          # Repository / persistence katmanı
-├── frontend/                        # PyQt5 UI
-│   ├── tema.py                     # QSS stylesheet (koyu tema)
-│   ├── ana_pencere.py              # Sidebar + sayfa yığını
-│   ├── views/                      # Sayfalar
-│   │   ├── dashboard.py
-│   │   ├── etkinlikler.py
-│   │   ├── katilimcilar.py
-│   │   ├── biletler.py
-│   │   └── raporlar.py
-│   └── widgets/                    # Yeniden kullanılabilir bileşenler
-│       ├── bilesenler.py           # IstatistikKart, Kart, DolulukGosterge
-│       └── diyaloglar.py           # Form modalları
-└── data/                            # JSON veri dosyaları (otomatik oluşur)
-    ├── etkinlikler.json
-    ├── katilimcilar.json
-    └── biletler.json
-```
+- **Ozellikler:** `etkinlik_id`, `ad`, `tarih`, `kapasite`
+- **Metodlar:** `katilimci_ekle()` - kapasite kontrolu ile kayit
 
-## Sınıf Yapısı (Görev Spesifikasyonu)
 
-### Etkinlik
-- Öznitelikler: `etkinlik_id`, `ad`, `tarih`, `kapasite`
-- Metod: `katilimci_ekle()`
+### Katilimci (`backend/katilimci.py`)
 
-### Katılımcı
-- Öznitelikler: `katilimci_id`, `ad`, `email`
+- **Ozellikler:** `katilimci_id`, `ad`, `email` (regex dogrulamali, benzersiz)
 
-### Bilet
-- Öznitelikler: `bilet_id`, `etkinlik`, `katilimci`
-- Metod: `bilet_olustur()` (factory)
 
-### Ek Özellik
-- Etkinliğe kaç kişi katıldı raporu — `Raporlar` sekmesinde detaylı görünüm + CSV indirme
-```
+### Bilet (`backend/bilet.py`)
+
+- **Ozellikler:** `bilet_id`, `etkinlik`, `katilimci`, `bilet_kodu` (BLT-XXXXXXXX formatinda)
+- **Metodlar:** `bilet_olustur()` - factory metodu, otomatik kod uretimi
+
+
+## Ozellikler
+
+- **Dashboard:** 4 metrik (Toplam Etkinlik, Katilimci, Bilet, Doluluk Orani) + populer etkinlikler + son kayitlar
+- **Etkinlik Yonetimi:** Etkinlik ekleme, duzenleme, silme; tarih ve kapasite takibi; doluluk gostergesi (yesil/sari/kirmizi)
+- **Katilimci Yonetimi:** Benzersiz email kontrolu ile katilimci kayit, arama, filtreleme
+- **Bilet Sistemi:** Otomatik bilet kodu uretimi (BLT-XXXXXXXX), etkinlik bazli bilet listesi
+- **Raporlar:** Etkinlik bazli detayli katilim analizi, doluluk istatistikleri, CSV export
+- **Is Kurallari:** Etkinlik kapasitesi dolunca kayit engellenir, ayni email tekrar kayit olamaz
+- **Tasarim:** Koyu tema (siyah arkaplan) + magenta accent + modern gradient kartlar
+
+
+## Ekran Goruntuleri
+
+### Giris Ekrani
+
+![Giris](images/giris.png)
+
+### Dashboard
+
+![Dashboard](images/dashboard.png)
+
+### Etkinlikler
+
+![Etkinlikler](images/etkinlikler.png)
+
+### Katilimcilar
+
+![Katilimcilar](images/katilimcilar.png)
+
+### Biletler
+
+![Biletler](images/biletler.png)
+
+### Raporlar
+
+![Raporlar](images/raporlar.png)
+
+
+## Kurulum ve Calistirma
+
+    pip install -r requirements.txt
+    python main.py
+
+## Varsayilan Giris
+
+- **Kullanici adi:** `admin`
+- **Sifre:** `admin123`
+
+
+## Ornek Veri
+
+Ilk calistirmada ornek etkinlik, katilimci ve bilet kayitlari otomatik olusturulur.
